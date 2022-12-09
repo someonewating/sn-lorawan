@@ -33,6 +33,11 @@
 
 #include "LightSensor.h"
 #include "SoilSensor.h"
+// #include "Accelerometer.h"
+#include "ColorSensor.h"
+// #include "RGBLed.h"
+#include "TempHumSensor.h"
+// #include "SerialGPS.h"
 
 using namespace events;
 using namespace std::chrono_literals;
@@ -63,14 +68,13 @@ uint8_t rx_buffer[30];
  */
 #define CONFIRMED_MSG_RETRY_COUNTER 3
 
-/**
- * Dummy pin for dummy sensor
- */
-#define PC_9 0
-
 LightSensor light_sensor(PA_4);
-SoilSensor soil_sensor(PA_0);
 TempHumSensor temp_hum(PB_9, PB_8);
+ColorSensor color_sensor(PB_9, PB_8);
+// RGBLed rgb_led(PH_0, PH_1, PB_13);
+SoilSensor soil_sensor(PA_0);
+// Accelerometer accel(PB_9, PB_8);
+// SerialGPS gps(PA_9, PA_10, 9600);
 
 /**
  * This event queue is the global event queue for both the
@@ -201,7 +205,9 @@ int main(void) {
 static void send_message() {
   uint16_t packet_len;
   int16_t retcode;
-  int8_t sensor_value, soil_value;
+  int8_t sensor_value, soil_value, tem, hum, x, y, z, lat, lon, alt;
+  uint16_t clear, red, green, blue;
+//   float x, y, z;
 //   int8_t soil_value;
   
   int i;
@@ -210,15 +216,39 @@ static void send_message() {
 
   if (light_sensor.read() > 0) {
     sensor_value = light_sensor.read();
+
     soil_value = soil_sensor.read();
+
+    tem = temp_hum.read_temperature();
+    hum = temp_hum.read_humidity();
+
+    // x = accel.getX();
+    // y = accel.getY();
+    // z = accel.getZ();
+
+    color_sensor.read_raw_RGB(&clear, &red, &green, &blue);
+
+    // gps.sample();
+    // lat = gps.latitude;
+    // lon = gps.longitude;
+    // alt = gps.alt;
+
     printf("\r\n Light Sensor Value = %d \r\n", sensor_value);
     printf("\r\n Soil Sensor Value = %d \r\n", soil_value);
+    printf("\r\n Accelerometer Sensor Value = %d, %d, %d \r\n", x, y, z);
+    printf("\r\n Color Sensor Value = %d, %d, %d, %d \r\n", clear, red, green, blue);
+    // printf("\r\n GPS Sensor Value = %d, %d, %d \r\n", lat, lon, alt);
   } else {
     printf("\r\n No sensor found \r\n");
     return;
   }
 
-  result = std::to_string(sensor_value) + " " + std::to_string(soil_value);
+  result = std::to_string(sensor_value)+" "+std::to_string(soil_value)+" "+std::to_string(tem)+" "+std::to_string(hum)
+           +" "+std::to_string(clear)+" "+std::to_string(red)
+           +" "+std::to_string(green)+" "+std::to_string(blue);
+
+//   +" "+std::to_string(lat)
+//            +" "+std::to_string(lon)+" "+std::to_string(alt)+std::to_string(x)+" "+std::to_string(y)+" "+std::to_string(z)+" "
 
   packet_len = snprintf((char *)tx_buffer, sizeof(tx_buffer), "%s", result.c_str());
 
