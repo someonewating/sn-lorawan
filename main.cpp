@@ -24,7 +24,6 @@
 #include "lorawan/system/lorawan_data_structures.h"
 
 // Application helpers
-#include "DummySensor.h"
 #include "lora_radio_helper.h"
 #include "trace_helper.h"
 
@@ -205,19 +204,17 @@ int main(void) {
 static void send_message() {
   uint16_t packet_len;
   int16_t retcode;
-  int8_t sensor_value, soil_value, tem, hum, x, y, z, lat, lon, alt;
+  int8_t light, soil, tem, hum, x, y, z;
   uint16_t clear, red, green, blue;
-//   float x, y, z;
-//   int8_t soil_value;
-  
+//   float lat, lon;
+
   int i;
   std::string result;
 
-
   if (light_sensor.read() > 0) {
-    sensor_value = light_sensor.read();
+    light = light_sensor.read();
 
-    soil_value = soil_sensor.read();
+    soil = soil_sensor.read();
 
     tem = temp_hum.read_temperature();
     hum = temp_hum.read_humidity();
@@ -231,26 +228,29 @@ static void send_message() {
     // gps.sample();
     // lat = gps.latitude;
     // lon = gps.longitude;
-    // alt = gps.alt;
+    // if (lat == lon ==0) {
+    //     lat = 40.389562770878904;
+    //     lon = -3.6290497507855557;
+    // }
 
-    printf("\r\n Light Sensor Value = %d \r\n", sensor_value);
-    printf("\r\n Soil Sensor Value = %d \r\n", soil_value);
+    printf("\r\n Light Sensor Value = %d \r\n", light);
+    printf("\r\n Soil Sensor Value = %d \r\n", soil);
     printf("\r\n Accelerometer Sensor Value = %d, %d, %d \r\n", x, y, z);
-    printf("\r\n Color Sensor Value = %d, %d, %d, %d \r\n", clear, red, green, blue);
-    // printf("\r\n GPS Sensor Value = %d, %d, %d \r\n", lat, lon, alt);
+    printf("\r\n Color Sensor Value = %d, %d, %d, %d \r\n", clear, red, green,
+           blue);
+    // printf("\r\n GPS Sensor Value = %.4f, %.4f \r\n", lat, lon);
   } else {
     printf("\r\n No sensor found \r\n");
     return;
   }
 
-  result = std::to_string(sensor_value)+" "+std::to_string(soil_value)+" "+std::to_string(tem)+" "+std::to_string(hum)
-           +" "+std::to_string(clear)+" "+std::to_string(red)
-           +" "+std::to_string(green)+" "+std::to_string(blue);
+  result = std::to_string(light) + " " + std::to_string(soil) + " " +
+           std::to_string(tem) + " " + std::to_string(hum) + " " +
+           std::to_string(clear) + " " + std::to_string(red) + " " +
+           std::to_string(green) + " " + std::to_string(blue);
 
-//   +" "+std::to_string(lat)
-//            +" "+std::to_string(lon)+" "+std::to_string(alt)+std::to_string(x)+" "+std::to_string(y)+" "+std::to_string(z)+" "
-
-  packet_len = snprintf((char *)tx_buffer, sizeof(tx_buffer), "%s", result.c_str());
+  packet_len =
+      snprintf((char *)tx_buffer, sizeof(tx_buffer), "%s", result.c_str());
 
   retcode = lorawan.send(MBED_CONF_LORA_APP_PORT, tx_buffer, packet_len,
                          MSG_UNCONFIRMED_FLAG);
