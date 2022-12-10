@@ -209,7 +209,7 @@ static void send_message() {
 //   float lat, lon;
 
   int i;
-  std::string result;
+  std::string space = " ";
 
   if (light_sensor.read() > 0) {
     light = light_sensor.read();
@@ -244,13 +244,10 @@ static void send_message() {
     return;
   }
 
-  result = std::to_string(light) + " " + std::to_string(soil) + " " +
-           std::to_string(tem) + " " + std::to_string(hum) + " " +
-           std::to_string(clear) + " " + std::to_string(red) + " " +
-           std::to_string(green) + " " + std::to_string(blue);
-
   packet_len =
-      snprintf((char *)tx_buffer, sizeof(tx_buffer), "%s", result.c_str());
+      snprintf((char *)tx_buffer, sizeof(tx_buffer), "%d%s%d%s%d%s%d%s%d%s%d%s%d%s%d", light, space.c_str(), soil,
+               space.c_str(), tem, space.c_str(), hum, space.c_str(), clear,
+               space.c_str(), red, space.c_str(), green, space.c_str(), blue);
 
   retcode = lorawan.send(MBED_CONF_LORA_APP_PORT, tx_buffer, packet_len,
                          MSG_UNCONFIRMED_FLAG);
@@ -270,6 +267,7 @@ static void send_message() {
   }
 
   printf("\r\n %d bytes scheduled for transmission \r\n", retcode);
+  printf("%s \n", tx_buffer);
   memset(tx_buffer, 0, sizeof(tx_buffer));
 }
 
