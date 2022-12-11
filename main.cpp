@@ -34,7 +34,7 @@
 #include "SoilSensor.h"
 // #include "Accelerometer.h"
 #include "ColorSensor.h"
-// #include "RGBLed.h"
+#include "RGBLed.h"
 #include "TempHumSensor.h"
 // #include "SerialGPS.h"
 
@@ -70,7 +70,7 @@ uint8_t rx_buffer[30];
 LightSensor light_sensor(PA_4);
 TempHumSensor temp_hum(PB_9, PB_8);
 ColorSensor color_sensor(PB_9, PB_8);
-// RGBLed rgb_led(PH_0, PH_1, PB_13);
+RGBLed rgb_led(PH_0, PH_1, PB_13);
 SoilSensor soil_sensor(PA_0);
 // Accelerometer accel(PB_9, PB_8);
 // SerialGPS gps(PA_9, PA_10, 9600);
@@ -117,6 +117,7 @@ static uint8_t APP_KEY[] = {0xf3, 0x1c, 0x2e, 0x8b, 0xc6, 0x71, 0x28, 0x1d,
  * Entry point for application
  */
 int main(void) {
+  rgb_led.set_color(OFF);
   printf("\r\n*** Sensor Networks @ ETSIST, UPM ***\r\n"
          "   Mbed (v%d.%d.%d) LoRaWAN example\r\n",
          MBED_MAJOR_VERSION, MBED_MINOR_VERSION, MBED_PATCH_VERSION);
@@ -204,11 +205,12 @@ int main(void) {
 static void send_message() {
   uint16_t packet_len;
   int16_t retcode;
-  int8_t light, soil, tem, hum, x, y, z;
+  int8_t light, soil;
+  int8_t tem, hum;
+//   int8_t x, y, z;
   uint16_t clear, red, green, blue;
 //   float lat, lon;
 
-  int i;
   std::string space = " ";
 
   if (light_sensor.read() > 0) {
@@ -233,11 +235,11 @@ static void send_message() {
     //     lon = -3.6290497507855557;
     // }
 
-    printf("\r\n Light Sensor Value = %d \r\n", light);
-    printf("\r\n Soil Sensor Value = %d \r\n", soil);
-    printf("\r\n Accelerometer Sensor Value = %d, %d, %d \r\n", x, y, z);
-    printf("\r\n Color Sensor Value = %d, %d, %d, %d \r\n", clear, red, green,
-           blue);
+    // printf("\r\n Light Sensor Value = %d \r\n", light);
+    // printf("\r\n Soil Sensor Value = %d \r\n", soil);
+    // printf("\r\n Tem&Hum Sensor Value = %d, %d \r\n", tem, hum);
+    // printf("\r\n Accelerometer Sensor Value = %d, %d, %d \r\n", x, y, z);
+    // printf("\r\n Color Sensor Value = %d, %d, %d, %d \r\n", clear, red, green, blue);
     // printf("\r\n GPS Sensor Value = %.4f, %.4f \r\n", lat, lon);
   } else {
     printf("\r\n No sensor found \r\n");
@@ -267,7 +269,7 @@ static void send_message() {
   }
 
   printf("\r\n %d bytes scheduled for transmission \r\n", retcode);
-  printf("%s \n", tx_buffer);
+//   printf("%s \n", tx_buffer);
   memset(tx_buffer, 0, sizeof(tx_buffer));
 }
 
@@ -278,6 +280,7 @@ static void receive_message() {
   uint8_t port;
   int flags;
   int16_t retcode = lorawan.receive(rx_buffer, sizeof(rx_buffer), port, flags);
+  uint8_t green[6], off[4], red[4];
 
   if (retcode < 0) {
     printf("\r\n receive() - Error code %d \r\n", retcode);
@@ -289,6 +292,23 @@ static void receive_message() {
     printf("%02x ", rx_buffer[i]);
   }
   printf("\r\n");
+
+  printf("%s \n", rx_buffer);
+
+  snprintf((char *)green, sizeof(green), "%s", "Green");
+  if (strcmp((const char *)rx_buffer, (const char *)green) == 0) {
+    rgb_led.set_color(GREEN);
+  }
+
+  snprintf((char *)off, sizeof(off), "%s", "OFF");
+  if (strcmp((const char *)rx_buffer, (const char *)off) ==0) {
+    rgb_led.set_color(OFF);
+  }
+
+  snprintf((char *)red, sizeof(red), "%s", "Red");
+  if (strcmp((const char *)rx_buffer, (const char *)red) == 0) {
+    rgb_led.set_color(RED);
+  }
 
   memset(rx_buffer, 0, sizeof(rx_buffer));
 }
