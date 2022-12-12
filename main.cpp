@@ -27,16 +27,16 @@
 #include "lora_radio_helper.h"
 #include "trace_helper.h"
 
-#include <iostream>
 #include <string>
 
-#include "LightSensor.h"
-#include "SoilSensor.h"
-// #include "Accelerometer.h"
+#include "Accelerometer.h"
 #include "ColorSensor.h"
+#include "LightSensor.h"
 #include "RGBLed.h"
+#include "SerialGPS.h"
+#include "SoilSensor.h"
 #include "TempHumSensor.h"
-// #include "SerialGPS.h"
+
 
 using namespace events;
 using namespace std::chrono_literals;
@@ -72,8 +72,8 @@ TempHumSensor temp_hum(PB_9, PB_8);
 ColorSensor color_sensor(PB_9, PB_8);
 RGBLed rgb_led(PH_0, PH_1, PB_13);
 SoilSensor soil_sensor(PA_0);
-// Accelerometer accel(PB_9, PB_8);
-// SerialGPS gps(PA_9, PA_10, 9600);
+Accelerometer accel(PB_9, PB_8);
+SerialGPS gps(PA_9, PA_10, 9600);
 
 /**
  * This event queue is the global event queue for both the
@@ -207,13 +207,13 @@ static void send_message() {
   int16_t retcode;
   int8_t light, soil;
   int8_t tem, hum;
-//   int8_t x, y, z;
+  int8_t x, y, z;
   uint16_t clear, red, green, blue;
-//   float lat, lon;
+  float lat, lon;
 
   std::string space = " ";
 
-  if (light_sensor.read() > 0) {
+  if (temp_hum.read_temperature() > 0) {
     light = light_sensor.read();
 
     soil = soil_sensor.read();
@@ -221,33 +221,34 @@ static void send_message() {
     tem = temp_hum.read_temperature();
     hum = temp_hum.read_humidity();
 
-    // x = accel.getX();
-    // y = accel.getY();
-    // z = accel.getZ();
+    x = accel.getX();
+    y = accel.getY();
+    z = accel.getZ();
 
     color_sensor.read_raw_RGB(&clear, &red, &green, &blue);
 
-    // gps.sample();
-    // lat = gps.latitude;
-    // lon = gps.longitude;
-    // if (lat == lon ==0) {
-    //     lat = 40.389562770878904;
-    //     lon = -3.6290497507855557;
-    // }
+    gps.sample();
+    lat = gps.latitude;
+    lon = gps.longitude;
+    if (lat == 0) {
+        lon = -3.6290497507855557;
+        lat = 40.389562770878904;
+    }
 
-    // printf("\r\n Light Sensor Value = %d \r\n", light);
-    // printf("\r\n Soil Sensor Value = %d \r\n", soil);
-    // printf("\r\n Tem&Hum Sensor Value = %d, %d \r\n", tem, hum);
-    // printf("\r\n Accelerometer Sensor Value = %d, %d, %d \r\n", x, y, z);
-    // printf("\r\n Color Sensor Value = %d, %d, %d, %d \r\n", clear, red, green, blue);
-    // printf("\r\n GPS Sensor Value = %.4f, %.4f \r\n", lat, lon);
+    printf("Longitude: %6.4f, latitude: %6.4f \r\n", lon, lat);
+    printf("Light Sensor Value = %d \r\n", light);
+    printf("Soil Sensor Value = %d \r\n", soil);
+    printf("Tem&Hum Sensor Value = %d, %d \r\n", tem, hum);
+    printf("Accelerometer Sensor Value = %d, %d, %d \r\n", x, y, z);
+    printf("Color Sensor Value = %d, %d, %d, %d \r\n", clear, red, green, blue);
   } else {
     printf("\r\n No sensor found \r\n");
     return;
   }
 
   packet_len =
-      snprintf((char *)tx_buffer, sizeof(tx_buffer), "%d%s%d%s%d%s%d%s%d%s%d%s%d%s%d", light, space.c_str(), soil,
+      snprintf((char *)tx_buffer, sizeof(tx_buffer),
+               "%d%s%d%s%d%s%d%s%d%s%d%s%d%s%d", light, space.c_str(), soil,
                space.c_str(), tem, space.c_str(), hum, space.c_str(), clear,
                space.c_str(), red, space.c_str(), green, space.c_str(), blue);
 
@@ -269,7 +270,7 @@ static void send_message() {
   }
 
   printf("\r\n %d bytes scheduled for transmission \r\n", retcode);
-//   printf("%s \n", tx_buffer);
+  printf("%s \n", tx_buffer);
   memset(tx_buffer, 0, sizeof(tx_buffer));
 }
 
@@ -301,7 +302,7 @@ static void receive_message() {
   }
 
   snprintf((char *)off, sizeof(off), "%s", "OFF");
-  if (strcmp((const char *)rx_buffer, (const char *)off) ==0) {
+  if (strcmp((const char *)rx_buffer, (const char *)off) == 0) {
     rgb_led.set_color(OFF);
   }
 

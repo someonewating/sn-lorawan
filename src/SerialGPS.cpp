@@ -21,8 +21,8 @@ int SerialGPS::sample() {
                &unit, &geoid) >= 1) {
       if (!lock) {
         _time = 0.0;
-        longitude = 0.0;
-        latitude = 0.0;
+        longitude = -3.6290497507855557;
+        latitude = 40.389562770878904;
         sats = 0;
         hdop = 0.0;
         alt = 0.0;
